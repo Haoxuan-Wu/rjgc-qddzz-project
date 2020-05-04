@@ -1,5 +1,2 @@
-# rjgc-qddzz
-软件工程大作业项目: 微信小程序-圈地大作战
-项目编号: 1
-组名: 羊吃人
-组号: 11
+# hello-world
+Hello world new project template.

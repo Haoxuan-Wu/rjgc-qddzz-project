@@ -17,7 +17,9 @@ cc.Class({
 
   onLoad() {},
 
-  start() {},
+  start() {
+    cc.log(this.player.getPosition());
+  },
 
   update(dt) {},
 });

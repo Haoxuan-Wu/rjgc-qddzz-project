@@ -1,5 +1,5 @@
-import JoystickEnum from "./joystick/JoystickEnum";
-import JoystickEvent from "./joystick/JoystickEvent";
+import JoystickEnum from './joystick/JoystickEnum';
+import JoystickEvent from './joystick/JoystickEvent';
 
 cc.Class({
   extends: cc.Component,
@@ -7,37 +7,37 @@ cc.Class({
     // from joystick
     moveDir: {
       default: cc.v2(0, 1),
-      displayName: "Move Dir",
-      tooltip: "移动方向",
+      displayName: 'Move Dir',
+      tooltip: '移动方向',
     },
     _speedType: {
       default: JoystickEnum.SpeedType.STOP,
-      displayName: "Speed Type",
+      displayName: 'Speed Type',
       type: JoystickEnum.SpeedType,
-      tooltip: "速度级别",
+      tooltip: '速度级别',
     },
 
     // from self
     _moveSpeed: {
       default: 0,
-      displayName: "Move Speed",
-      tooltip: "移动速度",
+      displayName: 'Move Speed',
+      tooltip: '移动速度',
     },
 
     stopSpeed: {
       default: 0,
       type: cc.Integer,
-      tooltip: "停止时速度",
+      tooltip: '停止时速度',
     },
     normalSpeed: {
       default: 200,
       type: cc.Integer,
-      tooltip: "正常速度",
+      tooltip: '正常速度',
     },
     fastSpeed: {
       default: 300,
       type: cc.Integer,
-      tooltip: "最快速度",
+      tooltip: '最快速度',
     },
   },
 

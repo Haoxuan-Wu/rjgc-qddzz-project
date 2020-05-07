@@ -174,7 +174,7 @@
       "array": [
         0,
         0,
-        268.55448299935404,
+        935.3074360871938,
         0,
         0,
         0,
@@ -271,7 +271,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 2110,
+      "width": 2100,
       "height": 1500
     },
     "_anchorPoint": {
@@ -404,7 +404,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "drawroute",
+    "_name": "graph",
     "_objFlags": 0,
     "_parent": {
       "__id__": 5
@@ -439,8 +439,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0.1,
-        0,
+        -1050,
+        -750,
         0,
         0,
         0,
@@ -547,8 +547,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 0,
-      "height": 0
+      "width": 2100,
+      "height": 1500
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -624,8 +624,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -175,
-        395.94,
+        -174,
+        395,
         0,
         0,
         0,
@@ -1288,9 +1288,13 @@
       "__id__": 5
     },
     "_enabled": true,
+    "graphNode": {
+      "__id__": 8
+    },
     "player": {
       "__id__": 11
     },
+    "gridPixel": 30,
     "_id": "294XNcakNOkKLMzmgD44TW"
   },
   {

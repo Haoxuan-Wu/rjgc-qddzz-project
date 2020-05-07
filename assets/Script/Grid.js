@@ -40,7 +40,7 @@ cc.Class({
   // 将网格染色
   DyeGrid: function (gridX, gridY) {
     let graphics = this.graphNode.getComponent(cc.Graphics);
-    graphics.rect(gridX, gridY, this.gridPixel, this.gridPixel);
+    graphics.rect(gridX + 1, gridY + 1, this.gridPixel - 2, this.gridPixel - 2);
     graphics.fillColor = cc.Color.RED;
     graphics.fill();
   },

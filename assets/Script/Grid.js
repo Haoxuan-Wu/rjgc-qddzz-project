@@ -35,8 +35,9 @@ cc.Class({
     let gridX = this.convertToGridX(this.player.getPosition().x);
     let gridY = this.convertToGridY(this.player.getPosition().y);
     if (this.gridColor[gridX][gridY] == 0) {
-      this.DyeGrid(gridX, gridY);
+      this.dyeGrid(gridX, gridY);
     }
+    this.drawRoute(this.player.getPosition().x, this.player.getPosition().y);
   },
 
   // 将小羊坐标转换为网格坐标，以左下角为坐标原点
@@ -46,11 +47,18 @@ cc.Class({
   convertToGridY: function (y) {
     return parseInt((y + 750) / this.gridPixel);
   },
+  // 画出小羊轨迹
+  drawRoute: function (x, y) {
+    let ctx = this.graphNode.getComponent(cc.Graphics);
+    ctx.fillColor = cc.Color.WHITE;
+    ctx.circle(x + 1050, y + 750, 3);
+    ctx.fill();
+  },
   // 将网格染色
-  DyeGrid: function (gridX, gridY) {
-    let graphics = this.graphNode.getComponent(cc.Graphics);
-    graphics.fillColor = cc.Color.RED;
-    graphics.fillRect(
+  dyeGrid: function (gridX, gridY) {
+    let ctx = this.graphNode.getComponent(cc.Graphics);
+    ctx.fillColor = cc.Color.RED;
+    ctx.fillRect(
       gridX * this.gridPixel + 1,
       gridY * this.gridPixel + 1,
       this.gridPixel - 2,

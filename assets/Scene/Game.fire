@@ -174,7 +174,7 @@
       "array": [
         0,
         0,
-        267.47195124462354,
+        334.8487170874536,
         0,
         0,
         0,
@@ -1295,7 +1295,13 @@
       "__id__": 11
     },
     "gridPixel": 30,
+    "lastXGrid": -1,
+    "lastYGrid": -1,
     "gridColor": [],
+    "walkPath": [],
+    "BLANKCOLOR": 0,
+    "SELFCOLOR": 1,
+    "ENEMYCOLOR": 2,
     "_id": "294XNcakNOkKLMzmgD44TW"
   },
   {

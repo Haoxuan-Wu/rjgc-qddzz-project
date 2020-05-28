@@ -122,9 +122,7 @@ cc.Class({
         this.walkPath[this.walkPath.length - 1].y !== gridY)
     ) {
       //如果新的格子不在原有的路径上
-      cc.log(this.walkPath);
       if (this.isClosePath(gridX, gridY)) {
-        cc.log('闭合了！' + gridX);
         this.selfAreaFill(gridX, gridY);
         //当队友闭合的时候，调用团队闭合算法
         // this.patternRouterCircle(this.cellIndex);
@@ -150,17 +148,12 @@ cc.Class({
   },
 
   isClosePath: function (gridX, gridY) {
-    if (this.gridColor[gridX][gridY] == this.SELFCOLOR) {
-      return true;
-    }
-    return false;
+    return this.gridColor[gridX][gridY] == this.SELFCOLOR;
   },
 
   selfAreaFill: function (gridX, gridY) {
     let index = this.getPathIndex(gridX, gridY);
-    cc.log('index:' + index);
     if (index !== -1 && this.isClosePath(gridX, gridY)) {
-      cc.log('检测自身路径存在闭合,索引为' + gridX + gridY);
       //获取闭合下标,从routeIndex所在位置进行截取this.nowRoute.indexOf(routeIndex)
       let toBeClosed = this.walkPath.slice(index);
       //进行填充
@@ -183,7 +176,7 @@ cc.Class({
       return a.x - b.x;
     }
     let yMax = 0; //获取坐标中最大的Y ?多少
-    let yMin = 50; //获取坐标中最小的Y
+    let yMin = this.maxGridY; //获取坐标中最小的Y
     let arrayX = new Array();
     for (let i = 0; i < toBeClosed.length; i++) {
       let y = toBeClosed[i].y;
@@ -207,17 +200,11 @@ cc.Class({
       }
       sameY[toBeClosed[i].y].push(scanPoint);
     }
-    cc.log(sameY);
     for (let i = yMin + 1; i < yMax; i++) {
       //对每行格子进行扫描，获取y = i 的格子坐标
-      cc.log(i + '-------lalalalla--------');
       sameY[i].sort(sortByField);
       arrayX = this.filterExtraPoint(sameY[i], toBeClosed);
       arrayX.sort(sortByField);
-      cc.log(i + '行扫描的交点数' + arrayX.length);
-      for (let i = 0; i < arrayX.length; i++) {
-        cc.log(arrayX[i].x);
-      }
       //每两个之间进行填充
       for (let j = 0; j < arrayX.length / 2; j++) {
         if (arrayX[j * 2 + 1].x > arrayX[j * 2].x) {
@@ -228,15 +215,8 @@ cc.Class({
           xBig = arrayX[j * 2].x;
         }
         for (let m = xSmall; m <= xBig; m++) {
-          cc.log(m, i);
           this.dyeGrid(m, i);
-          cc.log('tianchongdaiam该行填充個數：---' + xSmall + '----' + xBig);
-          this.gridColor[m][i] = this.SELFCOLOR;
         }
-        cc.log(
-          '该行填充個數：---' + arrayX[j * 2 + 1] + '----' + arrayX[j * 2]
-        );
-        cc.log('该行填充次数' + arrayX.length / 2);
       }
     }
     //this.clearNowRoute();
@@ -247,7 +227,6 @@ cc.Class({
     // 在一行扫描线相交的像素点中
     for (let i = 0; i < arrayX.length - 1; i++) {
       //删除连在一起的x
-      cc.log('遍歷可能刪除的x');
       if (
         arrayX[i].x === arrayX[i + 1].x - 1 ||
         arrayX[i].x === arrayX[i + 1].x + 1
@@ -256,12 +235,10 @@ cc.Class({
         i--;
       }
     }
-    cc.log('arrayX_length' + arrayX.length);
+
     for (let i = 0; i < arrayX.length; i++) {
       let index = arrayX[i].index;
-      cc.log('i is' + i);
-      cc.log('index is' + index);
-      cc.log('toBeClosed is' + toBeClosed);
+
       let backPoint = (index + 1) % toBeClosed.length;
       let frontPoint =
         (((index - 1) % toBeClosed.length) + toBeClosed.length) %
@@ -275,10 +252,7 @@ cc.Class({
           (((frontPoint - 1) % toBeClosed.length) + toBeClosed.length) %
           toBeClosed.length;
       }
-      cc.log(backPoint);
-      cc.log(frontPoint);
-      cc.log(toBeClosed[backPoint].y);
-      cc.log(toBeClosed[frontPoint].y);
+
       if (
         toBeClosed[backPoint].y < toBeClosed[index].y &&
         toBeClosed[frontPoint].y < toBeClosed[index].y

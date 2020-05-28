@@ -13,11 +13,25 @@ cc.Class({
     gridPixel: {
       default: 30,
     },
-    lastXGrid: { //存储上一次的xGrid编号，以判断是否移动
-      default: -1
+    mapWidth: {
+      default: 2100,
+    },
+    mapHeight: {
+      default: 1500,
+    },
+    // 数组坐标上界
+    maxGridX: {
+      default: 70,
+    },
+    maxGridY: {
+      default: 50,
+    },
+    //存储上一次的xGrid编号，以判断是否移动
+    lastXGrid: {
+      default: -1,
     },
     lastYGrid: {
-      default: -1
+      default: -1,
     },
     gridColor: [],
     walkPath: [], //{x:,y:}的结构数组，用于存储路径信息
@@ -26,67 +40,72 @@ cc.Class({
     ENEMYCOLOR: 2,
   },
 
-  onLoad() {
-    this.initColor();
-  },
+  onLoad() {},
   // 初始化记录方格颜色的数组
   initColor: function () {
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < this.maxGridX; i++) {
       this.gridColor[i] = [];
-      for (let j = 0; j < 50; j++) {
-        this.gridColor[i][j] = 0;
+      for (let j = 0; j < this.maxGridY; j++) {
+        this.gridColor[i][j] = this.BLANKCOLOR;
       }
     }
   },
 
-  start() {},
+  start() {
+    this.maxGridX = this.mapWidth / this.gridPixel;
+    this.maxGridY = this.mapHeight / this.gridPixel;
+    this.initColor();
+  },
 
   update(dt) {
     let gridX = this.convertToGridX(this.player.getPosition().x);
     let gridY = this.convertToGridY(this.player.getPosition().y);
-    //if (this.gridColor[gridX][gridY] == 0) {
-    //this.dyeGrid(gridX, gridY);
-    //}
     this.dyeInsideArea(gridX, gridY);
     this.drawRoute(this.player.getPosition().x, this.player.getPosition().y);
   },
 
   // 将小羊坐标转换为网格坐标，以左下角为坐标原点
   convertToGridX: function (x) {
-    return parseInt((x + 1050) / this.gridPixel);
+    return parseInt((x + this.mapWidth / 2) / this.gridPixel);
   },
   convertToGridY: function (y) {
-    return parseInt((y + 750) / this.gridPixel);
+    return parseInt((y + this.mapHeight / 2) / this.gridPixel);
   },
   // 画出小羊轨迹
   drawRoute: function (x, y) {
     let ctx = this.graphNode.getComponent(cc.Graphics);
     ctx.fillColor = cc.Color.WHITE;
-    ctx.circle(x + 1050, y + 750, 3);
+    ctx.circle(x + this.mapWidth / 2, y + this.mapHeight / 2, 3);
     ctx.fill();
   },
   // 将网格染色
   dyeGrid: function (gridX, gridY) {
     let ctx = this.graphNode.getComponent(cc.Graphics);
     ctx.fillColor = cc.Color.RED;
+    // +1是为了留出边界的距离
     ctx.fillRect(
       gridX * this.gridPixel + 1,
       gridY * this.gridPixel + 1,
       this.gridPixel - 2,
       this.gridPixel - 2
     );
-    this.gridColor[gridX][gridY] = 1;
+    this.gridColor[gridX][gridY] = this.SELFCOLOR;
   },
 
   dyeInsideArea: function (gridX, gridY) {
-    if (gridX === this.lastXGrid && gridY === this.lastYGrid) { // 位置没有变化
+    if (gridX === this.lastXGrid && gridY === this.lastYGrid) {
+      // 位置没有变化
       return;
     }
-    if (this.walkPath.length != 0 && (this.walkPath[this.walkPath.length - 1].x !== gridX || this.walkPath[this.walkPath.length - 1].y !== gridY)) {
+    if (
+      this.walkPath.length != 0 &&
+      (this.walkPath[this.walkPath.length - 1].x !== gridX ||
+        this.walkPath[this.walkPath.length - 1].y !== gridY)
+    ) {
       //如果新的格子不在原有的路径上
       cc.log(this.walkPath);
       if (this.isClosePath(gridX, gridY)) {
-        cc.log("闭合了！" + gridX);
+        cc.log('闭合了！' + gridX);
         this.selfAreaFill(gridX, gridY);
         //当队友闭合的时候，调用团队闭合算法
         // this.patternRouterCircle(this.cellIndex);
@@ -100,7 +119,7 @@ cc.Class({
     let point = new Object();
     point.x = gridX;
     point.y = gridY;
-    this.walkPath.push(point)
+    this.walkPath.push(point);
     /*if ( >= 0) {
       cc.log("设置颜色this.cellIndex---" + this.cellIndex + "--color--" + route[this.cellIndex][2]);
       route[this.cellIndex][2] = common.myColor;
@@ -120,9 +139,9 @@ cc.Class({
 
   selfAreaFill: function (gridX, gridY) {
     let index = this.getPathIndex(gridX, gridY);
-    cc.log("index:" + index);
+    cc.log('index:' + index);
     if (index !== -1 && this.isClosePath(gridX, gridY)) {
-      cc.log("检测自身路径存在闭合,索引为" + gridX + gridY);
+      cc.log('检测自身路径存在闭合,索引为' + gridX + gridY);
       //获取闭合下标,从routeIndex所在位置进行截取this.nowRoute.indexOf(routeIndex)
       let toBeClosed = this.walkPath.slice(index);
       //进行填充
@@ -134,7 +153,10 @@ cc.Class({
     let currentPoint = new Object();
     currentPoint.x = gridX;
     currentPoint.y = gridY;
-    return (this.walkPath || []).findIndex((pathPoint) => (pathPoint.x === currentPoint.x && pathPoint.y === currentPoint.y));
+    return (this.walkPath || []).findIndex(
+      (pathPoint) =>
+        pathPoint.x === currentPoint.x && pathPoint.y === currentPoint.y
+    );
   },
 
   fillCircle: function (toBeClosed) {
@@ -169,11 +191,11 @@ cc.Class({
     cc.log(sameY);
     for (let i = yMin + 1; i < yMax; i++) {
       //对每行格子进行扫描，获取y = i 的格子坐标
-      cc.log(i + "-------lalalalla--------");
+      cc.log(i + '-------lalalalla--------');
       sameY[i].sort(sortByField);
       arrayX = this.filterExtraPoint(sameY[i], toBeClosed);
       arrayX.sort(sortByField);
-      cc.log(i + "行扫描的交点数" + arrayX.length);
+      cc.log(i + '行扫描的交点数' + arrayX.length);
       for (let i = 0; i < arrayX.length; i++) {
         cc.log(arrayX[i].x);
       }
@@ -189,11 +211,13 @@ cc.Class({
         for (let m = xSmall; m <= xBig; m++) {
           cc.log(m, i);
           this.dyeGrid(m, i);
-          cc.log("tianchongdaiam该行填充個數：---" + xSmall + "----" + xBig);
+          cc.log('tianchongdaiam该行填充個數：---' + xSmall + '----' + xBig);
           this.gridColor[m][i] = this.SELFCOLOR;
         }
-        cc.log("该行填充個數：---" + arrayX[j * 2 + 1] + "----" + arrayX[j * 2]);
-        cc.log("该行填充次数" + arrayX.length / 2);
+        cc.log(
+          '该行填充個數：---' + arrayX[j * 2 + 1] + '----' + arrayX[j * 2]
+        );
+        cc.log('该行填充次数' + arrayX.length / 2);
       }
     }
     //this.clearNowRoute();
@@ -202,37 +226,52 @@ cc.Class({
 
   filterExtraPoint: function (arrayX, toBeClosed) {
     // 在一行扫描线相交的像素点中
-    for (let i = 0; i < arrayX.length - 1; i++) { //删除连在一起的x
-      cc.log("遍歷可能刪除的x");
-      if (arrayX[i].x === arrayX[i + 1].x - 1 || arrayX[i].x === arrayX[i + 1].x + 1) {
+    for (let i = 0; i < arrayX.length - 1; i++) {
+      //删除连在一起的x
+      cc.log('遍歷可能刪除的x');
+      if (
+        arrayX[i].x === arrayX[i + 1].x - 1 ||
+        arrayX[i].x === arrayX[i + 1].x + 1
+      ) {
         arrayX.splice(i, 1);
         i--;
       }
     }
-    cc.log("arrayX_length" + arrayX.length);
+    cc.log('arrayX_length' + arrayX.length);
     for (let i = 0; i < arrayX.length; i++) {
       let index = arrayX[i].index;
-      cc.log("i is" + i);
-      cc.log("index is" + index);
-      cc.log("toBeClosed is" + toBeClosed);
+      cc.log('i is' + i);
+      cc.log('index is' + index);
+      cc.log('toBeClosed is' + toBeClosed);
       let backPoint = (index + 1) % toBeClosed.length;
-      let frontPoint = ((index - 1) % toBeClosed.length + toBeClosed.length) % toBeClosed.length; //取模而不是取余
-      while (toBeClosed[backPoint].y === toBeClosed[index].y) { //寻找最近的不同y的点
+      let frontPoint =
+        (((index - 1) % toBeClosed.length) + toBeClosed.length) %
+        toBeClosed.length; //取模而不是取余
+      while (toBeClosed[backPoint].y === toBeClosed[index].y) {
+        //寻找最近的不同y的点
         backPoint = (backPoint + 1) % toBeClosed.length;
       }
       while (toBeClosed[frontPoint].y === toBeClosed[index].y) {
-        frontPoint = ((frontPoint - 1) % toBeClosed.length + toBeClosed.length) % toBeClosed.length;
+        frontPoint =
+          (((frontPoint - 1) % toBeClosed.length) + toBeClosed.length) %
+          toBeClosed.length;
       }
       cc.log(backPoint);
       cc.log(frontPoint);
       cc.log(toBeClosed[backPoint].y);
-      cc.log(toBeClosed[frontPoint].y)
-      if (toBeClosed[backPoint].y < toBeClosed[index].y && toBeClosed[frontPoint].y < toBeClosed[index].y) {
+      cc.log(toBeClosed[frontPoint].y);
+      if (
+        toBeClosed[backPoint].y < toBeClosed[index].y &&
+        toBeClosed[frontPoint].y < toBeClosed[index].y
+      ) {
         arrayX.splice(i, 1);
-      } else if (toBeClosed[backPoint].y > toBeClosed[index].y && toBeClosed[frontPoint].y > toBeClosed[index].y) {
+      } else if (
+        toBeClosed[backPoint].y > toBeClosed[index].y &&
+        toBeClosed[frontPoint].y > toBeClosed[index].y
+      ) {
         arrayX.splice(i, 1);
       }
     }
     return arrayX;
-  }
+  },
 });

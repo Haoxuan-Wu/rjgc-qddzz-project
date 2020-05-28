@@ -10,9 +10,11 @@ cc.Class({
       default: null,
       type: cc.Node,
     },
+    // 网格像素大小
     gridPixel: {
       default: 30,
     },
+    // 地图大小
     mapWidth: {
       default: 2100,
     },
@@ -33,30 +35,44 @@ cc.Class({
     lastYGrid: {
       default: -1,
     },
+    // 二维数组，存储网格颜色
     gridColor: [],
-    walkPath: [], //{x:,y:}的结构数组，用于存储路径信息
+    // 二维数组，染色前判断是否为保留区
+    reservedZone: [],
+    //{x:,y:}的结构数组，用于存储路径信息
+    walkPath: [],
     BLANKCOLOR: 0,
     SELFCOLOR: 1,
     ENEMYCOLOR: 2,
   },
 
   onLoad() {},
-  // 初始化记录方格颜色的数组
-  initColor: function () {
-    for (let i = 0; i < this.maxGridX; i++) {
-      this.gridColor[i] = [];
-      for (let j = 0; j < this.maxGridY; j++) {
-        this.gridColor[i][j] = this.BLANKCOLOR;
-      }
-    }
-  },
 
   start() {
     this.maxGridX = this.mapWidth / this.gridPixel;
     this.maxGridY = this.mapHeight / this.gridPixel;
     this.initColor();
   },
-
+  // 初始化记录方格颜色的数组与保留区数组
+  initColor: function () {
+    for (let i = 0; i < this.maxGridX; i++) {
+      this.gridColor[i] = [];
+      this.reservedZone[i] = [];
+      for (let j = 0; j < this.maxGridY; j++) {
+        this.gridColor[i][j] = this.BLANKCOLOR;
+        this.reservedZone[i][j] = false;
+      }
+    }
+    // 将出生点周围的3x3格子作为保留区
+    let gridX = this.convertToGridX(this.player.getPosition().x);
+    let gridY = this.convertToGridY(this.player.getPosition().y);
+    for (let i = gridX - 1; i < gridX + 2; i++) {
+      for (let j = gridY - 1; j < gridY + 2; j++) {
+        this.dyeGrid(i, j);
+        this.reservedZone[i][j] = true;
+      }
+    }
+  },
   update(dt) {
     let gridX = this.convertToGridX(this.player.getPosition().x);
     let gridY = this.convertToGridY(this.player.getPosition().y);
@@ -80,16 +96,19 @@ cc.Class({
   },
   // 将网格染色
   dyeGrid: function (gridX, gridY) {
-    let ctx = this.graphNode.getComponent(cc.Graphics);
-    ctx.fillColor = cc.Color.RED;
-    // +1是为了留出边界的距离
-    ctx.fillRect(
-      gridX * this.gridPixel + 1,
-      gridY * this.gridPixel + 1,
-      this.gridPixel - 2,
-      this.gridPixel - 2
-    );
-    this.gridColor[gridX][gridY] = this.SELFCOLOR;
+    // 当前染色的格子不属于保留区
+    if (!this.reservedZone[gridX][gridY]) {
+      let ctx = this.graphNode.getComponent(cc.Graphics);
+      ctx.fillColor = cc.Color.RED;
+      // +1是为了留出边界的距离
+      ctx.fillRect(
+        gridX * this.gridPixel + 1,
+        gridY * this.gridPixel + 1,
+        this.gridPixel - 2,
+        this.gridPixel - 2
+      );
+      this.gridColor[gridX][gridY] = this.SELFCOLOR;
+    }
   },
 
   dyeInsideArea: function (gridX, gridY) {

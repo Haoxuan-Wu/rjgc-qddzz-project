@@ -130,13 +130,17 @@ cc.Class({
         //this.campCricle(this.cellIndex);
       }
     }
+
+    if (this.gridColor[gridX][gridY] !== this.SELFCOLOR) {
+      this.dyeGrid(gridX, gridY); //对位置进行染色
+      cc.log(gridX + ' ' + gridY);
+      let point = new Object();
+      point.x = gridX;
+      point.y = gridY;
+      this.walkPath.push(point);
+    }
     this.lastXGrid = gridX;
     this.lastYGrid = gridY;
-    this.dyeGrid(gridX, gridY); //对位置进行染色
-    let point = new Object();
-    point.x = gridX;
-    point.y = gridY;
-    this.walkPath.push(point);
     /*if ( >= 0) {
       cc.log("设置颜色this.cellIndex---" + this.cellIndex + "--color--" + route[this.cellIndex][2]);
       route[this.cellIndex][2] = common.myColor;
@@ -205,6 +209,8 @@ cc.Class({
       sameY[i].sort(sortByField);
       arrayX = this.filterExtraPoint(sameY[i], toBeClosed);
       arrayX.sort(sortByField);
+      cc.log(i + '行扫描的交点数' + arrayX.length);
+      cc.log(arrayX);
       //每两个之间进行填充
       for (let j = 0; j < arrayX.length / 2; j++) {
         if (arrayX[j * 2 + 1].x > arrayX[j * 2].x) {
@@ -228,8 +234,10 @@ cc.Class({
     for (let i = 0; i < arrayX.length - 1; i++) {
       //删除连在一起的x
       if (
-        arrayX[i].x === arrayX[i + 1].x - 1 ||
-        arrayX[i].x === arrayX[i + 1].x + 1
+        Math.abs(arrayX[i].x - arrayX[i + 1].x) === 1 &&
+        (Math.abs(arrayX[i].index - arrayX[i + 1].index) === 1 ||
+          Math.abs(arrayX[i].index - arrayX[i + 1].index) ===
+            toBeClosed.length - 1)
       ) {
         arrayX.splice(i, 1);
         i--;

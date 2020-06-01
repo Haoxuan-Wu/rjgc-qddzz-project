@@ -10,6 +10,10 @@ cc.Class({
       default: null,
       type: cc.Node,
     },
+    playerRoute: {
+      default: null,
+      type: cc.Node,
+    },
     // 网格像素大小
     gridPixel: {
       default: 30,
@@ -93,7 +97,9 @@ cc.Class({
     let gridX = this.convertToGridX(this.player.getPosition().x);
     let gridY = this.convertToGridY(this.player.getPosition().y);
     this.dyeInsideArea(gridX, gridY);
-    this.drawRoute(this.player.getPosition().x, this.player.getPosition().y);
+    if (this.gridColor[gridX][gridY] !== this.TERRITORYCOLOR) {
+      this.drawRoute(this.player.getPosition().x, this.player.getPosition().y);
+    }
   },
 
   // 将小羊坐标转换为网格坐标，以左下角为坐标原点
@@ -105,10 +111,14 @@ cc.Class({
   },
   // 画出小羊轨迹
   drawRoute: function (x, y) {
-    let ctx = this.graphNode.getComponent(cc.Graphics);
+    let ctx = this.playerRoute.getComponent(cc.Graphics);
     ctx.fillColor = cc.Color.WHITE;
     ctx.circle(x + this.mapWidth / 2, y + this.mapHeight / 2, 3);
     ctx.fill();
+  },
+  clearRoute: function () {
+    let ctx = this.playerRoute.getComponent(cc.Graphics);
+    ctx.clear();
   },
   // 将网格染色
   dyeGrid: function (gridX, gridY, color) {
@@ -271,6 +281,7 @@ cc.Class({
         this.walkPath[i].y
       ] = this.TERRITORYCOLOR;
     }
+    this.clearRoute();
     this.walkPath.splice(0, this.walkPath.length);
   },
 

@@ -39,11 +39,15 @@ cc.Class({
     gridColor: [],
     // 二维数组，染色前判断是否为保留区
     reservedZone: [],
-    //{x:,y:}的结构数组，用于存储路径信息
+    // {x:,y:}的结构数组，用于存储路径信息
     walkPath: [],
+    // 结构数组，存储第y行第一个与最后一个被染色网格的x坐标
+    searchYX: [],
     BLANKCOLOR: 0,
-    SELFCOLOR: 1,
-    ENEMYCOLOR: 2,
+    // 标记已走过路线但还未成为领地的网格
+    ROUTECOLOR: 1,
+    // 领地网格
+    TERRITORYCOLOR: 2,
   },
 
   onLoad() {},
@@ -68,10 +72,22 @@ cc.Class({
     let gridY = this.convertToGridY(this.player.getPosition().y);
     for (let i = gridX - 1; i < gridX + 2; i++) {
       for (let j = gridY - 1; j < gridY + 2; j++) {
-        this.dyeGrid(i, j);
+        this.dyeGrid(i, j, this.TERRITORYCOLOR);
         this.reservedZone[i][j] = true;
       }
     }
+
+    for (let j = 0; j < this.maxGridY; j++) {
+      let temp = new Object();
+      temp.first = this.maxGridX;
+      temp.last = 0;
+      this.searchYX[j] = temp;
+    }
+    for (let j = gridY - 1; j < gridY + 2; j++) {
+      this.searchYX[j].first = gridX - 1;
+      this.searchYX[j].last = gridX + 1;
+    }
+    cc.log(this.searchYX);
   },
   update(dt) {
     let gridX = this.convertToGridX(this.player.getPosition().x);
@@ -95,7 +111,7 @@ cc.Class({
     ctx.fill();
   },
   // 将网格染色
-  dyeGrid: function (gridX, gridY) {
+  dyeGrid: function (gridX, gridY, color) {
     // 当前染色的格子不属于保留区
     if (!this.reservedZone[gridX][gridY]) {
       let ctx = this.graphNode.getComponent(cc.Graphics);
@@ -107,7 +123,7 @@ cc.Class({
         this.gridPixel - 2,
         this.gridPixel - 2
       );
-      this.gridColor[gridX][gridY] = this.SELFCOLOR;
+      this.gridColor[gridX][gridY] = color;
     }
   },
 
@@ -116,31 +132,35 @@ cc.Class({
       // 位置没有变化
       return;
     }
+    this.lastXGrid = gridX;
+    this.lastYGrid = gridY;
     if (
       this.walkPath.length != 0 &&
       (this.walkPath[this.walkPath.length - 1].x !== gridX ||
         this.walkPath[this.walkPath.length - 1].y !== gridY)
     ) {
       //如果新的格子不在原有的路径上
-      if (this.isClosePath(gridX, gridY)) {
+
+      if (this.gridColor[gridX][gridY] == this.ROUTECOLOR) {
         this.selfAreaFill(gridX, gridY);
-        //当队友闭合的时候，调用团队闭合算法
-        // this.patternRouterCircle(this.cellIndex);
-        //当画线到自身阵营
-        //this.campCricle(this.cellIndex);
+      } else if (this.gridColor[gridX][gridY] == this.TERRITORYCOLOR) {
+        this.terriAreaFill();
       }
+      //当队友闭合的时候，调用团队闭合算法
+      // this.patternRouterCircle(this.cellIndex);
+      //当画线到自身阵营
     }
 
-    if (this.gridColor[gridX][gridY] !== this.SELFCOLOR) {
-      this.dyeGrid(gridX, gridY); //对位置进行染色
-      cc.log(gridX + ' ' + gridY);
+    if (
+      this.gridColor[gridX][gridY] !== this.ROUTECOLOR &&
+      this.gridColor[gridX][gridY] != this.TERRITORYCOLOR
+    ) {
+      this.dyeGrid(gridX, gridY, this.ROUTECOLOR); //对位置进行染色
       let point = new Object();
       point.x = gridX;
       point.y = gridY;
       this.walkPath.push(point);
     }
-    this.lastXGrid = gridX;
-    this.lastYGrid = gridY;
     /*if ( >= 0) {
       cc.log("设置颜色this.cellIndex---" + this.cellIndex + "--color--" + route[this.cellIndex][2]);
       route[this.cellIndex][2] = common.myColor;
@@ -152,19 +172,29 @@ cc.Class({
   },
 
   isClosePath: function (gridX, gridY) {
-    return this.gridColor[gridX][gridY] == this.SELFCOLOR;
+    return (
+      this.gridColor[gridX][gridY] == this.ROUTECOLOR ||
+      this.gridColor[gridX][gridY] == this.TERRITORYCOLOR
+    );
   },
 
   selfAreaFill: function (gridX, gridY) {
     let index = this.getPathIndex(gridX, gridY);
-    if (index !== -1 && this.isClosePath(gridX, gridY)) {
+    if (index !== -1) {
       //获取闭合下标,从routeIndex所在位置进行截取this.nowRoute.indexOf(routeIndex)
       let toBeClosed = this.walkPath.slice(index);
       //进行填充
+      if (toBeClosed.length > 4) {
+        this.fillCircle(toBeClosed);
+      }
+    }
+  },
+  terriAreaFill: function () {
+    let toBeClosed = this.walkPath.slice();
+    if (toBeClosed.length > 2) {
       this.fillCircle(toBeClosed);
     }
   },
-
   getPathIndex: function (gridX, gridY) {
     let currentPoint = new Object();
     currentPoint.x = gridX;
@@ -190,6 +220,7 @@ cc.Class({
       if (y < yMin) {
         yMin = y;
       }
+      this.gridColor[toBeClosed[i].x][toBeClosed[i].y] = this.TERRITORYCOLOR;
     }
     //对每行格子进行扫描,扫描范围是 yMin-yMax
     let xBig = 0;
@@ -211,6 +242,15 @@ cc.Class({
       arrayX.sort(sortByField);
       cc.log(i + '行扫描的交点数' + arrayX.length);
       cc.log(arrayX);
+      cc.log(this.searchYX);
+
+      if (sameY[i][0].x < this.searchYX[i].first) {
+        this.searchYX[i].first = sameY[i][0].x;
+      }
+      if (sameY[i][sameY[i].length - 1].x > this.searchYX[i].last) {
+        this.searchYX[i].last = sameY[i][sameY[i].length - 1].x;
+      }
+
       //每两个之间进行填充
       for (let j = 0; j < arrayX.length / 2; j++) {
         if (arrayX[j * 2 + 1].x > arrayX[j * 2].x) {
@@ -220,13 +260,18 @@ cc.Class({
           xSmall = arrayX[j * 2 + 1].x;
           xBig = arrayX[j * 2].x;
         }
-        for (let m = xSmall; m <= xBig; m++) {
-          this.dyeGrid(m, i);
+        for (let m = xSmall + 1; m < xBig; m++) {
+          this.dyeGrid(m, i, this.TERRITORYCOLOR);
         }
       }
     }
     //this.clearNowRoute();
-    //this.closure.splice(0, this.closure);
+    for (let i = 0; i < this.walkPath.length; i++) {
+      this.gridColor[this.walkPath[i].x][
+        this.walkPath[i].y
+      ] = this.TERRITORYCOLOR;
+    }
+    this.walkPath.splice(0, this.walkPath.length);
   },
 
   filterExtraPoint: function (arrayX, toBeClosed) {
@@ -272,6 +317,17 @@ cc.Class({
       ) {
         arrayX.splice(i, 1);
       }
+    }
+    if (arrayX.length === 1) {
+      let indexY = toBeClosed[arrayX[0].index].y;
+      let addPoint = new Object();
+      addPoint.index = undefined;
+      if (arrayX[0].x < this.searchYX[indexY].first) {
+        addPoint.x = this.searchYX[indexY].first;
+      } else if (arrayX[0].x > this.searchYX[indexY].last) {
+        addPoint.x = this.searchYX[indexY].last;
+      }
+      arrayX.push(addPoint);
     }
     return arrayX;
   },

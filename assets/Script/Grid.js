@@ -52,6 +52,9 @@ cc.Class({
     ROUTECOLOR: 1,
     // 领地网格
     TERRITORYCOLOR: 2,
+    map: {
+      default: null,
+    }
   },
 
   onLoad() {},
@@ -60,6 +63,7 @@ cc.Class({
     this.maxGridX = this.mapWidth / this.gridPixel;
     this.maxGridY = this.mapHeight / this.gridPixel;
     this.initColor();
+    this.map = new Map();
   },
   // 初始化记录方格颜色的数组与保留区数组
   initColor: function () {
@@ -121,11 +125,22 @@ cc.Class({
     ctx.clear();
   },
   // 将网格染色
-  dyeGrid: function (gridX, gridY, color) {
+  dyeGrid: function (gridX, gridY, color, num = 1) {
     // 当前染色的格子不属于保留区
+    if (num !== 1) {
+      let ctx = this.graphNode.getComponent(cc.Graphics);
+      ctx.fillColor = (num == 1) ? cc.Color.RED : cc.Color.BLUE;
+      // +1是为了留出边界的距离
+      ctx.fillRect(
+        gridX * this.gridPixel + 1,
+        gridY * this.gridPixel + 1,
+        this.gridPixel - 2,
+        this.gridPixel - 2
+      );
+    }
     if (!this.reservedZone[gridX][gridY]) {
       let ctx = this.graphNode.getComponent(cc.Graphics);
-      ctx.fillColor = cc.Color.RED;
+      ctx.fillColor = (num == 1) ? cc.Color.RED : cc.Color.BLUE;
       // +1是为了留出边界的距离
       ctx.fillRect(
         gridX * this.gridPixel + 1,
@@ -154,7 +169,7 @@ cc.Class({
       if (this.gridColor[gridX][gridY] == this.ROUTECOLOR) {
         this.selfAreaFill(gridX, gridY);
       } else if (this.gridColor[gridX][gridY] == this.TERRITORYCOLOR) {
-        this.terriAreaFill();
+        this.terriAreaFill(gridX, gridY);
       }
       //当队友闭合的时候，调用团队闭合算法
       // this.patternRouterCircle(this.cellIndex);
@@ -190,6 +205,7 @@ cc.Class({
 
   selfAreaFill: function (gridX, gridY) {
     let index = this.getPathIndex(gridX, gridY);
+    cc.log(index)
     if (index !== -1) {
       //获取闭合下标,从routeIndex所在位置进行截取this.nowRoute.indexOf(routeIndex)
       let toBeClosed = this.walkPath.slice(index);
@@ -199,11 +215,251 @@ cc.Class({
       }
     }
   },
-  terriAreaFill: function () {
+  terriAreaFill: function (gridX, gridY) {
     let toBeClosed = this.walkPath.slice();
     if (toBeClosed.length > 2) {
-      this.fillCircle(toBeClosed);
+      let node = new Object();
+      let start = new Object();
+      start.x = gridX;
+      start.y = gridY;
+      node = this.BFS(start);
+      let map = this.map;
+      cc.log('传回的map')
+      cc.log(map);
+      cc.log(node);
+      cc.log(start);
+      startnode = map.get(node);
+      cc.log(node);
+      if (node !== null) {
+        this.walkPath.unshift(node);
+        cc.log(this.walkPath);
+        while (node.x != start.x || node.y != start.y) {
+          node = map.get(node);
+          cc.log(node);
+          this.walkPath.unshift(node);
+          cc.log(this.walkPath);
+        }
+        this.walkPath.unshift(start);
+        cc.log('最后的walkpath');
+        cc.log(this.walkPath);
+        cc.log(gridX, gridY);
+        for (i = 1; i != this.walkPath.length; i++) {
+          this.dyeGrid(this.walkPath[i].x, this.walkPath[i].y, this.TERRITORYCOLOR, 0);
+        }
+        this.selfAreaFill(gridX, gridY);
+      }
     }
+  },
+  BFS: function (start) {
+    let visit = [];
+    for (let i = 0; i < this.maxGridX; i++) {
+      visit[i] = [];
+      for (let j = 0; j < this.maxGridY; j++) {
+        visit[i][j] = 0;
+      }
+    }
+    cc.log(this.gridColor);
+    let queue = []
+    this.map.clear();
+    queue.push(start); //将s放入队列 Q
+    let u = queue.shift(); //将Q中的第一个元素移出
+    x = u.x;
+    y = u.y;
+    if (this.gridColor[x - 1][y - 1] == this.TERRITORYCOLOR && visit[x - 1][y - 1] == 0) {
+      newnode = new Object();
+      newnode.x = x - 1;
+      newnode.y = y - 1;
+      queue.push(newnode);
+      cc.log(1);
+      visit[x - 1][y - 1] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x + 1][y + 1] == this.TERRITORYCOLOR && visit[x + 1][y + 1] == 0) {
+      newnode = new Object();
+      newnode.x = x + 1;
+      newnode.y = y + 1;
+      queue.push(newnode);
+      cc.log(2);
+      visit[x + 1][y + 1] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x - 1][y + 1] == this.TERRITORYCOLOR && visit[x - 1][y + 1] == 0) {
+      newnode = new Object();
+      newnode.x = x - 1;
+      newnode.y = y + 1;
+      queue.push(newnode);
+      cc.log(3);
+      visit[x - 1][y + 1] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x + 1][y - 1] == this.TERRITORYCOLOR && visit[x + 1][y - 1] == 0) {
+      newnode = new Object();
+      newnode.x = x + 1;
+      newnode.y = y - 1;
+      queue.push(newnode);
+      cc.log(4);
+      visit[x + 1][y - 1] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x][y - 1] == this.TERRITORYCOLOR && visit[x][y - 1] == 0) {
+      newnode = new Object();
+      newnode.x = x;
+      newnode.y = y - 1;
+      queue.push(newnode);
+      cc.log(5);
+      visit[x][y - 1] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x][y + 1] == this.TERRITORYCOLOR && visit[x][y + 1] == 0) {
+      newnode = new Object();
+      newnode.x = x;
+      newnode.y = y + 1;
+      queue.push(newnode);
+      cc.log(6);
+      visit[x][y + 1] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x + 1][y] == this.TERRITORYCOLOR && visit[x + 1][y] == 0) {
+      newnode = new Object();
+      newnode.x = x + 1;
+      newnode.y = y;
+      queue.push(newnode);
+      cc.log(7);
+      visit[x + 1][y] = 1;
+      this.map.set(newnode, u);
+    } else if (this.gridColor[x - 1][y] == this.TERRITORYCOLOR && visit[x - 1][y] == 0) {
+      newnode = new Object();
+      newnode.x = x - 1;
+      newnode.y = y;
+      queue.push(newnode);
+      cc.log(8);
+      visit[x - 1][y] = 1;
+      this.map.set(newnode, u);
+    }
+    while (queue.length > 0) { //当队列Q中有顶点时执行搜索
+      let u = queue.shift(); //将Q中的第一个元素移出
+      x = u.x;
+      y = u.y;
+      cc.log(queue)
+      if (this.gridColor[x - 1][y - 1] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x - 1;
+        newnode.y = y - 1;
+        this.map.set(newnode, u);
+        cc.log(-1);
+        return newnode;
+      } else if (this.gridColor[x + 1][y + 1] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x + 1;
+        newnode.y = y + 1;
+        this.map.set(newnode, u);
+        cc.log(-2);
+        return newnode;
+      } else if (this.gridColor[x - 1][y + 1] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x - 1;
+        newnode.y = y + 1;
+        this.map.set(newnode, u);
+        cc.log(-3);
+        return newnode;
+      } else if (this.gridColor[x + 1][y - 1] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x + 1;
+        newnode.y = y - 1;
+        this.map.set(newnode, u);
+        cc.log(-4);
+        return newnode;
+      } else if (this.gridColor[x][y - 1] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x;
+        newnode.y = y - 1;
+        this.map.set(newnode, u);
+        cc.log(-5);
+        return newnode;
+      } else if (this.gridColor[x][y + 1] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x;
+        newnode.y = y + 1;
+        this.map.set(newnode, u);
+        cc.log(-6);
+        return newnode;
+      } else if (this.gridColor[x + 1][y] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x + 1;
+        newnode.y = y;
+        this.map.set(newnode, u);
+        cc.log(-7);
+        cc.log(this.map);
+        return newnode;
+      } else if (this.gridColor[x - 1][y] == this.ROUTECOLOR) {
+        newnode = new Object();
+        newnode.x = x - 1;
+        newnode.y = y;
+        this.map.set(newnode, u);
+        cc.log(-8);
+        return newnode;
+      }
+      if (this.gridColor[x - 1][y - 1] == this.TERRITORYCOLOR && visit[x - 1][y - 1] == 0) {
+        newnode = new Object();
+        newnode.x = x - 1;
+        newnode.y = y - 1;
+        queue.push(newnode);
+        cc.log(1);
+        visit[x - 1][y - 1] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x + 1][y + 1] == this.TERRITORYCOLOR && visit[x + 1][y + 1] == 0) {
+        newnode = new Object();
+        newnode.x = x + 1;
+        newnode.y = y + 1;
+        queue.push(newnode);
+        cc.log(2);
+        visit[x + 1][y + 1] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x - 1][y + 1] == this.TERRITORYCOLOR && visit[x - 1][y + 1] == 0) {
+        newnode = new Object();
+        newnode.x = x - 1;
+        newnode.y = y + 1;
+        queue.push(newnode);
+        cc.log(3);
+        visit[x - 1][y + 1] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x + 1][y - 1] == this.TERRITORYCOLOR && visit[x + 1][y - 1] == 0) {
+        newnode = new Object();
+        newnode.x = x + 1;
+        newnode.y = y - 1;
+        queue.push(newnode);
+        cc.log(4);
+        visit[x + 1][y - 1] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x][y - 1] == this.TERRITORYCOLOR && visit[x][y - 1] == 0) {
+        newnode = new Object();
+        newnode.x = x;
+        newnode.y = y - 1;
+        queue.push(newnode);
+        cc.log(5);
+        visit[x][y - 1] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x][y + 1] == this.TERRITORYCOLOR && visit[x][y + 1] == 0) {
+        newnode = new Object();
+        newnode.x = x;
+        newnode.y = y + 1;
+        queue.push(newnode);
+        cc.log(6);
+        visit[x][y + 1] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x + 1][y] == this.TERRITORYCOLOR && visit[x + 1][y] == 0) {
+        newnode = new Object();
+        newnode.x = x + 1;
+        newnode.y = y;
+        queue.push(newnode);
+        cc.log(7);
+        visit[x + 1][y] = 1;
+        this.map.set(newnode, u);
+      } else if (this.gridColor[x - 1][y] == this.TERRITORYCOLOR && visit[x - 1][y] == 0) {
+        newnode = new Object();
+        newnode.x = x - 1;
+        newnode.y = y;
+        queue.push(newnode);
+        cc.log(8);
+        visit[x - 1][y] = 1;
+        this.map.set(newnode, u);
+      }
+    }
+    return null;
   },
   getPathIndex: function (gridX, gridY) {
     let currentPoint = new Object();
@@ -211,7 +467,7 @@ cc.Class({
     currentPoint.y = gridY;
     return (this.walkPath || []).findIndex(
       (pathPoint) =>
-        pathPoint.x === currentPoint.x && pathPoint.y === currentPoint.y
+      pathPoint.x === currentPoint.x && pathPoint.y === currentPoint.y
     );
   },
 
@@ -253,14 +509,6 @@ cc.Class({
       cc.log(i + '行扫描的交点数' + arrayX.length);
       cc.log(arrayX);
       cc.log(this.searchYX);
-
-      if (sameY[i][0].x < this.searchYX[i].first) {
-        this.searchYX[i].first = sameY[i][0].x;
-      }
-      if (sameY[i][sameY[i].length - 1].x > this.searchYX[i].last) {
-        this.searchYX[i].last = sameY[i][sameY[i].length - 1].x;
-      }
-
       //每两个之间进行填充
       for (let j = 0; j < arrayX.length / 2; j++) {
         if (arrayX[j * 2 + 1].x > arrayX[j * 2].x) {
@@ -293,7 +541,7 @@ cc.Class({
         Math.abs(arrayX[i].x - arrayX[i + 1].x) === 1 &&
         (Math.abs(arrayX[i].index - arrayX[i + 1].index) === 1 ||
           Math.abs(arrayX[i].index - arrayX[i + 1].index) ===
-            toBeClosed.length - 1)
+          toBeClosed.length - 1)
       ) {
         arrayX.splice(i, 1);
         i--;
@@ -328,17 +576,6 @@ cc.Class({
       ) {
         arrayX.splice(i, 1);
       }
-    }
-    if (arrayX.length === 1) {
-      let indexY = toBeClosed[arrayX[0].index].y;
-      let addPoint = new Object();
-      addPoint.index = undefined;
-      if (arrayX[0].x < this.searchYX[indexY].first) {
-        addPoint.x = this.searchYX[indexY].first;
-      } else if (arrayX[0].x > this.searchYX[indexY].last) {
-        addPoint.x = this.searchYX[indexY].last;
-      }
-      arrayX.push(addPoint);
     }
     return arrayX;
   },

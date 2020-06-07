@@ -215,6 +215,14 @@ cc.Class({
       //进行填充
       if (toBeClosed.length > 4) {
         this.fillCircle(toBeClosed);
+      } else {
+        for (let i = 0; i < this.walkPath.length; i++) {
+          this.gridColor[this.walkPath[i].x][
+            this.walkPath[i].y
+          ] = this.TERRITORYCOLOR;
+        }
+        this.clearRoute();
+        this.walkPath.splice(0, this.walkPath.length);
       }
     }
   },
@@ -262,6 +270,14 @@ cc.Class({
         cc.log(toBeClosed);
         this.fillCircle(toBeClosed);
       }
+    } else {
+      for (let i = 0; i < this.walkPath.length; i++) {
+        this.gridColor[this.walkPath[i].x][
+          this.walkPath[i].y
+        ] = this.TERRITORYCOLOR;
+      }
+      this.clearRoute();
+      this.walkPath.splice(0, this.walkPath.length);
     }
   },
   BFS: function (start, dest) {

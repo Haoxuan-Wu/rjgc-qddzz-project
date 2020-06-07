@@ -45,8 +45,8 @@ cc.Class({
     reservedZone: [],
     // {x:,y:}的结构数组，用于存储路径信息
     walkPath: [],
-    // 结构数组，存储第y行第一个与最后一个被染色网格的x坐标
-    searchYX: [],
+    moveX: [],
+    moveY: [],
     BLANKCOLOR: 0,
     // 标记已走过路线但还未成为领地的网格
     ROUTECOLOR: 1,
@@ -64,6 +64,8 @@ cc.Class({
     this.maxGridY = this.mapHeight / this.gridPixel;
     this.initColor();
     this.map = new Map();
+    this.moveX = new Array(-1, -1, -1, 0, 0, 1, 1, 1);
+    this.moveY = new Array(-1, 0, 1, -1, 1, -1, 0, 1);
   },
   // 初始化记录方格颜色的数组与保留区数组
   initColor: function () {
@@ -84,18 +86,6 @@ cc.Class({
         this.reservedZone[i][j] = true;
       }
     }
-
-    for (let j = 0; j < this.maxGridY; j++) {
-      let temp = new Object();
-      temp.first = this.maxGridX;
-      temp.last = 0;
-      this.searchYX[j] = temp;
-    }
-    for (let j = gridY - 1; j < gridY + 2; j++) {
-      this.searchYX[j].first = gridX - 1;
-      this.searchYX[j].last = gridX + 1;
-    }
-    cc.log(this.searchYX);
   },
   update(dt) {
     let gridX = this.convertToGridX(this.player.getPosition().x);
@@ -292,105 +282,6 @@ cc.Class({
     let queue = [];
     this.map.clear();
     queue.push(start); //将s放入队列 Q
-    let u = queue.shift(); //将Q中的第一个元素移出
-    x = u.x;
-    y = u.y;
-    if (
-      this.gridColor[x - 1][y - 1] == this.TERRITORYCOLOR &&
-      visit[x - 1][y - 1] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x - 1;
-      newnode.y = y - 1;
-      queue.push(newnode);
-      cc.log(1);
-      visit[x - 1][y - 1] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x + 1][y + 1] == this.TERRITORYCOLOR &&
-      visit[x + 1][y + 1] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x + 1;
-      newnode.y = y + 1;
-      queue.push(newnode);
-      cc.log(2);
-      visit[x + 1][y + 1] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x - 1][y + 1] == this.TERRITORYCOLOR &&
-      visit[x - 1][y + 1] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x - 1;
-      newnode.y = y + 1;
-      queue.push(newnode);
-      cc.log(3);
-      visit[x - 1][y + 1] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x + 1][y - 1] == this.TERRITORYCOLOR &&
-      visit[x + 1][y - 1] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x + 1;
-      newnode.y = y - 1;
-      queue.push(newnode);
-      cc.log(4);
-      visit[x + 1][y - 1] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x][y - 1] == this.TERRITORYCOLOR &&
-      visit[x][y - 1] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x;
-      newnode.y = y - 1;
-      queue.push(newnode);
-      cc.log(5);
-      visit[x][y - 1] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x][y + 1] == this.TERRITORYCOLOR &&
-      visit[x][y + 1] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x;
-      newnode.y = y + 1;
-      queue.push(newnode);
-      cc.log(6);
-      visit[x][y + 1] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x + 1][y] == this.TERRITORYCOLOR &&
-      visit[x + 1][y] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x + 1;
-      newnode.y = y;
-      queue.push(newnode);
-      cc.log(7);
-      visit[x + 1][y] = 1;
-      this.map.set(newnode, u);
-    }
-    if (
-      this.gridColor[x - 1][y] == this.TERRITORYCOLOR &&
-      visit[x - 1][y] == 0
-    ) {
-      newnode = new Object();
-      newnode.x = x - 1;
-      newnode.y = y;
-      queue.push(newnode);
-      cc.log(8);
-      visit[x - 1][y] = 1;
-      this.map.set(newnode, u);
-    }
     while (queue.length > 0) {
       //当队列Q中有顶点时执行搜索
       let u = queue.shift(); //将Q中的第一个元素移出
@@ -400,101 +291,20 @@ cc.Class({
       if (Math.abs(x - dest.x) < 2 && Math.abs(y - dest.y) < 2) {
         return u;
       }
-      if (
-        this.gridColor[x - 1][y - 1] == this.TERRITORYCOLOR &&
-        visit[x - 1][y - 1] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x - 1;
-        newnode.y = y - 1;
-        queue.push(newnode);
-        cc.log(1);
-        visit[x - 1][y - 1] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x + 1][y + 1] == this.TERRITORYCOLOR &&
-        visit[x + 1][y + 1] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x + 1;
-        newnode.y = y + 1;
-        queue.push(newnode);
-        cc.log(2);
-        visit[x + 1][y + 1] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x - 1][y + 1] == this.TERRITORYCOLOR &&
-        visit[x - 1][y + 1] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x - 1;
-        newnode.y = y + 1;
-        queue.push(newnode);
-        cc.log(3);
-        visit[x - 1][y + 1] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x + 1][y - 1] == this.TERRITORYCOLOR &&
-        visit[x + 1][y - 1] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x + 1;
-        newnode.y = y - 1;
-        queue.push(newnode);
-        cc.log(4);
-        visit[x + 1][y - 1] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x][y - 1] == this.TERRITORYCOLOR &&
-        visit[x][y - 1] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x;
-        newnode.y = y - 1;
-        queue.push(newnode);
-        cc.log(5);
-        visit[x][y - 1] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x][y + 1] == this.TERRITORYCOLOR &&
-        visit[x][y + 1] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x;
-        newnode.y = y + 1;
-        queue.push(newnode);
-        cc.log(6);
-        visit[x][y + 1] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x + 1][y] == this.TERRITORYCOLOR &&
-        visit[x + 1][y] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x + 1;
-        newnode.y = y;
-        queue.push(newnode);
-        cc.log(7);
-        visit[x + 1][y] = 1;
-        this.map.set(newnode, u);
-      }
-      if (
-        this.gridColor[x - 1][y] == this.TERRITORYCOLOR &&
-        visit[x - 1][y] == 0
-      ) {
-        newnode = new Object();
-        newnode.x = x - 1;
-        newnode.y = y;
-        queue.push(newnode);
-        cc.log(8);
-        visit[x - 1][y] = 1;
-        this.map.set(newnode, u);
+      for (let i = 0; i < 8; i++) {
+        let newX = x + this.moveX[i];
+        let newY = y + this.moveY[i];
+        if (
+          this.gridColor[newX][newY] == this.TERRITORYCOLOR &&
+          visit[newX][newY] == 0
+        ) {
+          newnode = new Object();
+          newnode.x = newX;
+          newnode.y = newY;
+          queue.push(newnode);
+          visit[newX][newY] = 1;
+          this.map.set(newnode, u);
+        }
       }
     }
     return null;
@@ -546,7 +356,6 @@ cc.Class({
       arrayX.sort(sortByField);
       cc.log(i + '行扫描的交点数' + arrayX.length);
       cc.log(arrayX);
-      cc.log(this.searchYX);
       //每两个之间进行填充
       for (let j = 0; j < arrayX.length / 2; j++) {
         if (arrayX[j * 2 + 1].x > arrayX[j * 2].x) {
